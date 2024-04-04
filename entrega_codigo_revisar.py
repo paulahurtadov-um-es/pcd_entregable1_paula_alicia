@@ -36,11 +36,10 @@ class Departamentos(Enum):
     DITEC = 1
     DIS = 2
 
+
 # -----------------------
 # CLASES
 # -----------------------
-
-
 class Persona(metaclass = ABCMeta) :
     @abstractmethod
     def __init__(self,nombre,dni,direccion,sexo) :
@@ -57,18 +56,12 @@ Para la clase Persona, al ser una clase abstracta, en ella no implementamos ning
 únicamente definimos los atributos de las instancias (los cuales se crean en las clases ProfesorAsociado, 
 ProfesorTitular, Investigador, Estudiante, que heredan de esta).
 
-Para el atributo "sexo", hemos utilizado una enumeración, donde el usuario introduce el string "V" o "M", y 
-ya es dentro del constructor donde se comprueba y se establece el valor de la enumeración.
+Para el atributo "sexo", hemos utilizado una enumeración, donde el usuario introduce Sexo.V o Sexo.M.
 
-Además, se añade la comprobación para tratar el posible error si se introduce algo distinto a "V" o a "M" para el atributo 'sexo'.
 
 """
 
-
-
-
 class MiembroDepartamento :
-
     def __init__(self,departamento,persona) :
         if not isinstance(departamento,Departamentos) :
             print("El departamento debe ser DIIC, DITEC O DIS, y debe pertenecer a la clase (enumeración) <Departamentos>")
@@ -89,7 +82,6 @@ class MiembroDepartamento :
             raise ErrorEnDepartamento
         self.departamento = departamento
 
-
 """
 
 Como esta clase mantiene una relación de composición con las clases ProfesorTitular, ProfesorAsociado e Investigador,
@@ -102,11 +94,6 @@ Esta clase cuenta con un único método (de instancia), 'cambioDepartamento', qu
 
 
 """
-
-
-
-
-
 
 
 class Investigador(Persona) :
@@ -129,11 +116,7 @@ class Investigador(Persona) :
 La clase Investigador hereda de persona, y como tal, hereda sus atributos y métodos. Al ser una clase abstracta,
 se debe implementar el método "devolverDatos".
 
-
 """
-
-
-
 
 
 
@@ -152,21 +135,12 @@ class Universidad :
         if not isinstance(departamento,Departamentos) :
             print("El departamento debe ser DIIC, DITEC O DIS, y debe pertenecer a la clase (enumeración) <Departamentos>")
             raise ErrorEnDepartamento
-        if isinstance(persona,ProfesorAsociado) or isinstance(persona,ProfesorTitular) or isinstance(persona,Investigador) :  #se comprueba si la persona es instancia de alguna de estas 3 clases, para la gestión de posibles errores
-        #ERROR SI NO ES INSTANCIA DE ESTAS TRES CLASES
-            if persona.dni in self._miembrosDep[departamento.name].keys() :
-                #ERROR: SI LA PERSONA YA SE ENCUENTRA COMO MIEMBRO EN DICHO DEPARTAMENTO
-                print("Dicha persona ya es miembro de ese departamento")
-                raise ErrorEnMiembro
-            miembro = MiembroDepartamento(departamento,persona)#Se crea la instancia de MiembroDepartamento. El error en cuanto al departamento ya está tratado en la clase MiembroDepartamento.
-            if miembro.persona.dni not in self._miembrosDep[miembro.departamento.name].keys() : #ERROR: CUANDO EL MIEMBRO YA SE ENCUENTRA EN EL DICT
-                self._miembrosDep[miembro.departamento.name][miembro.persona.dni] = miembro  # se añade a nuestro diccionario miembrosDep
-            else :
-                print("La persona ya es miembro de departamento.")
-                raise ErrorEnMiembro
-        else :
-            print("La persona debe ser o Profesor Titular o Profesor Asociado o Investigador")
+        if self.es_miembro(persona) : #El error relacionado con el objeto 'persona' ya es tratado en el método 'es_miembro' 
+            print("La persona ya es miembro de departamento.") 
             raise ErrorEnMiembro
+        miembro = MiembroDepartamento(departamento,persona)#Se crea la instancia de MiembroDepartamento. 
+        self._miembrosDep[miembro.departamento.name][miembro.persona.dni] = miembro
+
         
 
     def añadirEstudiante(self,nombre, dni, direccion, sexo, asignaturas= None) :
@@ -187,7 +161,7 @@ class Universidad :
         if not isinstance(miembro,MiembroDepartamento) :#significa que nos ha devuelto la cadena de '--->La persona con dicho DNI no pertenece a ningún departamento.'
             print("No se puede eliminar un miembro que no existe")
             raise ErrorEnMiembro
-        self._miembrosDep[miembro.departamento.name].pop(miembro.persona.dni) #dicho objeto es utilizado para buscar y eliminar en el diccionario 'miembrosDep'
+        self._miembrosDep[miembro.departamento.name].pop(miembro.persona.dni) #dicho objeto 'miembro' es utilizado para eliminar en el diccionario 'miembrosDep'
 
 
     def eliminarEstudiante(self,dni) :
@@ -217,6 +191,7 @@ class Universidad :
                 #eliminamos a la persona de su antiguo departamento
                 self.eliminarMiembro(persona.dni)
                 miembro.cambioDepartamento(departamento)
+                #añadimos a la persona al nuevo departamento
                 self.añadirMiembro(departamento,persona)
             else :
                 print("La persona ya se encuentra en dicho departamento")
@@ -256,12 +231,10 @@ class Universidad :
     
     
     def añadirAsignaturaEstudiante(self,asignatura_nombre,dni_estudiante) :
-        #ERROR: QUE asignatura NO SEA OBJETO DE ASIGNATURA
+        #ERROR: asignatura NO SEA OBJETO DE ASIGNATURA
         #ERROR, DICHO DNI NO ESTÁ EN EL DICCIONARIO (NO ES ESTUDIANTE)
         asignatura = self.devolverAsignatura(asignatura_nombre) #No hace falta implementar el error de asignatura aquí porque ya está implementado en el método 'devolverAsignatura'
         if dni_estudiante in self._estudiantes.keys() :
-            if asignatura.nombre not in self._asignaturas.keys() :  
-                self._asignaturas[asignatura.nombre] = asignatura  #cuando la asignatura tiene mínimo 1 alumno matriculado, se añade la asignatura al diccionario 'asignaturas' en Universidad
             estudiante = self._estudiantes[dni_estudiante]
             asignatura.añadirEstudiante(estudiante)
         else :
@@ -275,8 +248,6 @@ class Universidad :
         if dni_estudiante in self._estudiantes.keys() :
             estudiante = self._estudiantes[dni_estudiante]
             asignatura.eliminarEstudiante(estudiante)
-            if len(asignatura.estudiantes) == 0 :
-                self._asignaturas.pop(asignatura.nombre) #en el momento en el que la asignatura deja de tener alumnos matriculados, dicha asignatura se elimina de Universidad
         else :
             print("No se encuentra estudiante con dicho DNI")
             raise ErrorEnEstudiante
@@ -287,14 +258,12 @@ class Universidad :
         #Suponemos que el profesor NO tiene que ser miembro de departamento para impartir asignaturas
         asignatura = self.devolverAsignatura(asignatura_nombre)
         if isinstance(profesor,ProfesorTitular) or isinstance(profesor,ProfesorAsociado) :
-            if asignatura.nombre not in self._asignaturas.keys() :
-                self._asignaturas[asignatura.nombre] = asignatura #se crea la asignatura en Universidad en el momento en el que haya alguien apuntado en ella
             asignatura.añadirProfesor(profesor)
         else :
             print("Profesor debe ser objeto de la clase <ProfesorTitular> o <ProfesorAsociado>")
             raise ErrorEnProfesor
 
-    def eliminarAsignaturaProfesor(self,asignatura_nombre, profesor) : #suponemos que, aunque la asignatura no tenga profesores, si al menos tiene un estudiante matriculado (o si no tiene alumnos y al menos hay un profesor apuntado para impartirla), la asignatura no se elimina del diccionario 'asignaturas' en <Universidad>
+    def eliminarAsignaturaProfesor(self,asignatura_nombre, profesor) : 
         #ERROR: QUE asignatura NO SEA OBJETO DE ASIGNATURA
         #ERROR: QUE EL OBJETO profesor NO SEA O ProfesorAsociado o ProfesorTitular
         asignatura = self.devolverAsignatura(asignatura_nombre)
@@ -370,7 +339,7 @@ class Universidad :
 
 """
 La clase Universidad es el eje central de todo nuestro código. El usuario
-a través de ella puede añadir y eliminar tanto estudiantes como miembro de departamento, además
+a través de ella puede añadir y eliminar estudiantes, miembros de departamento, y asignaturas, además
 de otros métodos.
 En cuanto a los atributos de instancia, cabe destacar la estructura del diccionario de 'miembrosDep',
 que a su vez contiene otros diccionarios que tienen como claves los DNI y como valores los objetos de la clase MiembroDepartamento.
@@ -432,11 +401,6 @@ Y por último, el método 'imparteProfesor', que comprueba si dicho profesor est
 
 
 
-        
-
-
-
-
 class ProfesorAsociado(Persona) :
     def __init__(self, nombre, dni, direccion, sexo,asignaturas=None):
         if not isinstance(sexo,Sexo) :
@@ -475,8 +439,6 @@ es que no hereda de Investigador (solo de persona).
 """
 
 
-
-
 class Estudiante(Persona): 
     def __init__(self, nombre, dni, direccion, sexo,asignaturas=None): #no implementamos el error en relación al atributo 'sexo' porque ya lo hemos tratado en el método 'añadirEstudiante' en Universidad, que es por donde el usuario añadirá o eliminará los estudiantes
         super().__init__(nombre, dni, direccion, sexo)
@@ -506,20 +468,14 @@ class Estudiante(Persona):
 
 
 """
-La clase Estudiante también es muy parecida a las dos clases ProfesorTitular y ProfesorAsociado,
-solo que un estudiante no es miembro de departamento. En cuanto a los métodos relacionados
-con las asignaturas, estos métodos son llamados por los métodos de "añadirEstudiante" y "eliminarEstudiante" de la 
+En cuanto a los métodos relacionados con las asignaturas, 
+estos métodos son llamados por los métodos de "añadirEstudiante" y "eliminarEstudiante" de la 
 clase Asignatura.
 
 Para el método 'matriculadoEstudiante' se comprueba si el alumno está matriculado en una asignatura concreta, 
 comprobando si se encuentra en el diccionario 'estudiantes' en la clase Asignatura.
 
 """
-
-
-
-
-
 
 class Asignatura :
     def __init__(self,nombre,profesores = None, estudiantes = None) :
@@ -575,45 +531,87 @@ respectivamente.
     
 
 
-if __name__ == '__main__' :   #Introducimos el sexo o el departamento como Sexo.V o Departamentos.DIIC
-     #ESTUDIANTE, ASIGNATURA Y MIEMBRO se crea(y se eliminan) A PARTIR DE UNIVERSIDAD (a través de 'añadirEstudiante','añadirMiembro','añadirAsignatura'), y ya los profesores se crean a parte como ProfesorTitular(.......)
+if __name__ == '__main__' :  
 
-    #LOS ERROR PONERLOS CON TRY/EXCEPT
-
-
-
-
-     Uni = Universidad('UMU','C/89')
-     profesor1=ProfesorAsociado('Pepe','111','C/44',Sexo.V)
-     Uni.añadirMiembro(Departamentos.DIIC,profesor1)  
-     #ERROR: CAMBIAR PERSONA A UN DEPARTAMENTO QUE YA SE ENCONTRABA EN ÉL:
-     try :
-         Uni.cambioDepartamento(Departamentos.DIIC,profesor1)
-     except Exception as e:
-         print ("excepción recibida: ",e)  #informamos del error (no re-lanzamos)
-     
-     Uni.añadirEstudiante('Luis','26618T','C/66',Sexo.V)
-     Uni.añadirAsignatura('mates')
-     estudiante1 = Uni.busquedaEstudiante('26618T')
-     asignatura1 = Uni.devolverAsignatura('mates')
-
-     #Error: eliminar un estudiante que no está matriculado en dicha asignatura:
-     try :
-         Uni.eliminarAsignaturaEstudiante('mates','26618T')
-     except Exception as e:
-         print ("excepción recibida: ",e)  #informamos del error (no re-lanzamos)
-     
-     #ahora añadimos el estudiante a la asignatura:
-     Uni.añadirAsignaturaEstudiante('mates','26618T')
-         
-
-    est1 = Uni.añadirEstudiante('Alicia','432','C/Pocho',Sexo.M)
-
-    #ERROR: estudiante se matricula en una asignatura que ya tiene
-    #ERROR: AÑADIR asignatura profesor en vez de un profesor un alumno
-    #ERROR: añadir una asignatura que ya se encuentra en la universidad
-    #ERROR: añadir un profesor a un departamento que no existe
+    Uni = Universidad('UM','C/89')
+    
+    Uni.añadirAsignatura('Matematicas')
+    asignatura1 = Uni.devolverAsignatura('Matematicas')
+    Uni.añadirAsignatura('Fisica I')
+    asignatura2= Uni.devolverAsignatura('Fisica I')
+    Uni.añadirAsignatura('Programacion')
+    asignatura3 = Uni.devolverAsignatura('Programacion')
+    
+    Uni.añadirEstudiante('Luis','266Q','C/66',Sexo.V)
+    estudiante1 = Uni.busquedaEstudiante('266Q')
+    estudiante1.devolverDatos()
+    Uni.añadirAsignaturaEstudiante('Matematicas','266Q')
+    Uni.añadirEstudiante('Alicia','432L','C/22',Sexo.M)
+    estudiante2 = Uni.busquedaEstudiante('432L')
+    Uni.añadirAsignaturaEstudiante('Fisica I','432L')
+    Uni.añadirAsignaturaEstudiante('Matematicas','432L')
+    
+    profesor1 = ProfesorAsociado('Pepe','111T','C/1',Sexo.V)
+    Uni.añadirMiembro(Departamentos.DIIC,profesor1)
+    profesor2 = ProfesorTitular('Alfonso','112R','C/12',Sexo.V,'Tecnologia')
+    Uni.añadirMiembro(Departamentos.DIS,profesor2) 
+    Uni.añadirAsignaturaProfesor('Matematicas',profesor1)
+    
+    invest = Investigador('Paula','890S','C/21',Sexo.M,'area 1')
+    invest.devolverDatos()
     
 
 
+    # Algunos ERRORES
 
+    #Añadir un miembro del departamento DIIC al departamento DIS
+    try :
+        Uni.añadirMiembro(Departamentos.DIS,profesor1)
+    except Exception as e :
+        print("Excepción recibida: ", e) #informamos del error (no re-lanzamos)
+     
+    # Eliminar un estudiante que no está matriculado en dicha asignatura
+    try :
+        Uni.eliminarAsignaturaEstudiante('Programacion','266Q')
+    except Exception as e:
+        print ("Excepción recibida: ",e)  #informamos del error (no re-lanzamos)
+     
+    # Estudiante se matricula en una asignatura que ya tiene
+    try :
+        Uni.añadirAsignaturaEstudiante('Fisica I','432L')
+    except Exception as e:
+        print ("Excepción recibida:",e) #informamos del error (no re-lanzamos)
+    
+    # Añadir asignatura profesor donde, en vez de ser profesor, es a un alumno
+    try :
+        Uni.añadirAsignaturaProfesor('Fisica I','266Q')
+    except Exception as e:
+        print ("Excepción recibida: ",e)  #informamos del error (no re-lanzamos)
+    
+    # Añadir una asignatura que ya se encuentra en la universidad
+    try :
+        Uni.añadirAsignatura('Fisica I')
+    except Exception as e:
+        print ("Excepción recibida: ",e)  #informamos del error (no re-lanzamos)
+    
+    # Cambiar un profesor a un departamento que no existe
+    try :
+        Uni.cambioDepartamento('DIIS',profesor2)
+    except Exception as e:
+        print ("Excepción recibida: ",e)  #informamos del error (no re-lanzamos)
+
+
+
+    print(estudiante1.matriculadoEstudiante(asignatura1))
+    Uni.eliminarAsignaturaEstudiante('Matematicas','266Q')
+    print(estudiante1.matriculadoEstudiante(asignatura1))
+    Uni.eliminarMiembro('112R')
+    print(Uni.es_miembro(profesor2))
+    print(profesor1.imparteProfesor(asignatura1))
+    Uni.eliminarAsignaturaProfesor('Matematicas',profesor1)
+    print(profesor1.imparteProfesor(asignatura1))
+    Uni.eliminarEstudiante('432L')
+    print(Uni.mostrarEstudiantes().keys())
+    Uni.eliminarAsignatura('Matematicas')
+    print(Uni.mostrarAsignaturas().keys())
+    
